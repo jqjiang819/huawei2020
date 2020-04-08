@@ -1,7 +1,9 @@
+# Python caches
 __pycache__/
 *.py[cod]
 *$py.class
 
+# DLLs
 *.so
 
 # Environments
@@ -9,6 +11,8 @@ __pycache__/
 .venv
 env/
 venv/
-ENV/
-env.bak/
-venv.bak/
+.idea/
+.vscode/
+
+# Output
+output/
