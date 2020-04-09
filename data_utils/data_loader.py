@@ -13,6 +13,10 @@ class dataLoader1():
                 id1,id2,val = line.strip().split(',')
                 vertex_set = self.graph.setdefault(int(id1),set())
                 vertex_set.add(int(id2))
+        for node in self.graph:
+            _list = list(self.graph[node])
+            _list.sort()
+            self.graph[node] = _list
 
     def load_result_file(self,test_file_path):
         self.result = []

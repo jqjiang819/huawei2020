@@ -2,8 +2,8 @@ from data_utils.data_loader import dataLoader1
 from algorithm import naive_algo
 from common_utils import algo_judge
 
-graph_file_path = "./test_data/test_data.txt"
-results_file_path = "./test_data/result.txt"
+graph_file_path = "./test_data/38252/test_data.txt"
+results_file_path = "./test_data/38252/result.txt"
 
 dataloader = dataLoader1(graph_file_path=graph_file_path,test_file_path=results_file_path)
 graph = dataloader.get_graph()
