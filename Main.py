@@ -1,5 +1,13 @@
+import os
+import time
+import functools
+
+import CheckResult
+
 
 DATA_PATH = "data/test_data.txt"
+TEST_PATH = "data/result.txt"
+OUTPUT_PATH = "output/results.txt"
 
 
 class Node:
@@ -36,17 +44,61 @@ def read_data(path):
 
 
 def dfs(nodes):
-    pass
+    stack = []
+    visited = {}
+    results = []
+    for n in nodes:
+        if not visited.get(n, False):
+            dfs_step(n, stack, visited, results)
+    return results
 
 
 def dfs_step(node, stack, visited, results):
-    pass
+    stack.append(node)
+    visited[node.id] = True
+    for child in node.children:
+        if child in stack:
+            results.append(stack[stack.index(child):])
+        elif not visited.get(child.id, False):
+            dfs_step(child, stack, visited, results)
+    visited[node.id] = False
+    stack.pop(-1)
+
+
+def res_cmp(x, y):
+    if len(x) != len(y):
+        return len(x) - len(y)
+    else:
+        return 1 if x > y else -1
+
+
+def make_results(results):
+    out = []
+    for r in set(map(tuple, results)):
+        # 2 < length <= 7
+        if len(r) < 3 or len(r) > 7:
+            continue
+        # extract id
+        rid = list(map(lambda x: x.id, r))
+        min_idx = rid.index(min(rid))
+        out.append(tuple(rid[min_idx:]+rid[:min_idx]))
+    return list(set(out))
 
 
 def start():
     read_data(DATA_PATH)
-    print(len(Node.instances))
+    results = make_results(dfs(Node.instances.values()))
+    results.sort(key=functools.cmp_to_key(res_cmp))
+    return results
 
 
 if __name__ == "__main__":
-    start()
+    t0 = time.time()
+    results = start()
+    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
+    with open(OUTPUT_PATH, "w") as f:
+        f.write("{0}\n".format(len(results)))
+        for r in results:
+            f.write("{0}\n".format(','.join(map(str, r))))
+    print(f"finished in {time.time() - t0} ms")
+    print(f"results check:", CheckResult.check(TEST_PATH, OUTPUT_PATH))
