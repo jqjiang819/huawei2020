@@ -1,12 +1,13 @@
 import os
 import time
+import tqdm
 import functools
 
 import CheckResult
 
 
-DATA_PATH = "data/test_data.txt"
-TEST_PATH = "data/result.txt"
+DATA_PATH = "data/54/test_data.txt"
+TEST_PATH = "data/54/result.txt"
 OUTPUT_PATH = "output/results.txt"
 
 
@@ -18,12 +19,12 @@ class Node:
             cls.instances[id] = object.__new__(cls)
         return cls.instances[id]
 
-    def __init__(self, id, tid=0, give=0):
+    def __init__(self, id, tid=-1, give=0):
         if "id" not in self.__dict__:
             self.id = id
             self.amount = 0
             self.children = []
-        if tid != 0:
+        if tid != -1:
             self.add_child(tid, give)
 
     def add_child(self, tid, give):
@@ -47,18 +48,22 @@ def dfs(nodes):
     stack = []
     visited = {}
     results = []
-    for n in nodes:
+    for n in tqdm.tqdm(nodes):
         if not visited.get(n, False):
             dfs_step(n, stack, visited, results)
     return results
 
 
 def dfs_step(node, stack, visited, results):
+    if len(stack) > 6:
+        return
     stack.append(node)
     visited[node.id] = True
     for child in node.children:
         if child in stack:
-            results.append(stack[stack.index(child):])
+            r = stack[stack.index(child):]
+            if len(r) > 2:
+                results.append(r)
         elif not visited.get(child.id, False):
             dfs_step(child, stack, visited, results)
     visited[node.id] = False
@@ -75,9 +80,6 @@ def res_cmp(x, y):
 def make_results(results):
     out = []
     for r in set(map(tuple, results)):
-        # 2 < length <= 7
-        if len(r) < 3 or len(r) > 7:
-            continue
         # extract id
         rid = list(map(lambda x: x.id, r))
         min_idx = rid.index(min(rid))
@@ -100,5 +102,5 @@ if __name__ == "__main__":
         f.write("{0}\n".format(len(results)))
         for r in results:
             f.write("{0}\n".format(','.join(map(str, r))))
-    print(f"finished in {time.time() - t0} ms")
+    print(f"finished in {time.time() - t0} s")
     print(f"results check:", CheckResult.check(TEST_PATH, OUTPUT_PATH))
