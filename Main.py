@@ -24,12 +24,14 @@ class Node:
             self.id = id
             self.amount = 0
             self.children = []
+            self.parent = []
         if tid != -1:
             self.add_child(tid, give)
 
     def add_child(self, tid, give):
         target = Node(tid)
         target.amount += give
+        target.parent.append(self)
         self.amount -= give
         self.children.append(target)
 
@@ -44,29 +46,37 @@ def read_data(path):
             Node(int(fr), int(to), int(am))
 
 
+def remove_nodes():
+    rm_ids = []
+    for nid, node in Node.instances.items():
+        if len(node.parent) == 0 or len(node.children) == 0:
+            rm_ids.append(nid)
+    for rm_id in rm_ids:
+        for p in Node.instances[rm_id].parent:
+            p.children.remove(Node.instances[rm_id])
+        del Node.instances[rm_id]
+
+
 def dfs(nodes):
     stack = []
     visited = {}
     results = []
     for n in tqdm.tqdm(nodes):
-        if not visited.get(n, False):
+        if not visited.get(n.id, False):
+            visited[n.id] = True
             dfs_step(n, stack, visited, results)
     return results
 
 
 def dfs_step(node, stack, visited, results):
-    if len(stack) > 6:
-        return
     stack.append(node)
-    visited[node.id] = True
     for child in node.children:
         if child in stack:
             r = stack[stack.index(child):]
-            if len(r) > 2:
-                results.append(r)
-        elif not visited.get(child.id, False):
+            if 2 < len(r) <= 7:
+                results.append(tuple(map(lambda x: x.id, r)))
+        elif len(stack) < 7 and not visited.get(child.id, False) :
             dfs_step(child, stack, visited, results)
-    visited[node.id] = False
     stack.pop(-1)
 
 
@@ -81,14 +91,14 @@ def make_results(results):
     out = []
     for r in set(map(tuple, results)):
         # extract id
-        rid = list(map(lambda x: x.id, r))
-        min_idx = rid.index(min(rid))
-        out.append(tuple(rid[min_idx:]+rid[:min_idx]))
+        min_idx = r.index(min(r))
+        out.append(tuple(r[min_idx:]+r[:min_idx]))
     return list(set(out))
 
 
 def start():
     read_data(DATA_PATH)
+    remove_nodes()
     results = make_results(dfs(Node.instances.values()))
     results.sort(key=functools.cmp_to_key(res_cmp))
     return results
