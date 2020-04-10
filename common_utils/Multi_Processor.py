@@ -53,16 +53,14 @@ class MultiProcessor():
         for unit in self.jobs_list:
             unit.start()
 
+import time
+CONST = 'const'
+def process_fn(process_list, output_dir, args=None):
+    for i in range(20):
+        print('\r num: {} from unit id: {},const:{}'.format(i, args[0],CONST), end='')
+        time.sleep(0.2)
 
 if __name__ == '__main__':
-    import time
-    CONST = 'const'
-
-    def process_fn(process_list, output_dir, args=None):
-        for i in range(20):
-            print('\r num: {} from unit id: {},const:{}'.format(i, args[0],CONST), end='')
-            time.sleep(0.2)
-
 
     multi_processor = MultiProcessor(job_num=4, process_fn=process_fn)
     multi_processor.start()

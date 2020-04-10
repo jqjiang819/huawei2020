@@ -3,21 +3,46 @@
 '''
 
 from tqdm import tqdm
-from common_utils.Multi_Processor import MultiProcessor
+import traceback
+import sys
+from common_utils.Multi_Processor2 import MultiProcessor
+import common_utils.Multi_Processor2 as MP
 from multiprocessing import Queue
 
 
 def process_fn(process_works, output: Queue, args: list):
-    # args: [id(auto added),graph,length]
+    #  args: [id,ctrl_pipe,min_idx,max_idx,offset,Array(request_min_idx,request_r_idx,allow_signal)]+[graph,length]
     # output: queue
     results = []
     process_id = args[0]
-    graph = args[1]
-    length = args[2]
-    for node in process_works:
-        path = [node]
-        find_all_circle_path_of_length_start_with(graph, length, results, path)
-
+    ctrl_pipe = args[1]
+    min_idx = args[2]
+    max_idx = args[3]
+    offset = args[4]
+    ctrl_array = args[5]
+    graph = args[-2]
+    length = args[-1]
+    #print("process_id {} init ,offset:{},max_idx:{},len_list:{}".format(process_id,offset,max_idx,len(process_works)))
+    idx = 0
+    while idx < max_idx:
+        try:
+            node = process_works[idx]
+            path = [node]
+            find_all_circle_path_of_length_start_with(graph, length, results, path)
+            idx += 1
+            if idx % 10 == 0 and idx != 0:
+                if ctrl_array[2] == 1:
+                    _left_jobs = max_idx-idx
+                    if _left_jobs > 20:
+                        distr_job_st_idx = _left_jobs//2 + idx
+                        ctrl_pipe.put((process_id,MP.MP_DISTRIBUTE_WORKS,[distr_job_st_idx+offset,max_idx+offset]))
+                        max_idx = distr_job_st_idx
+                        ctrl_array[2]=0
+        except Exception as e:
+            print("idx:{}, min_idx:{}, max_idx:{},processId:{},length:{}".format(idx,min_idx,max_idx,process_id,len(process_works)))
+            exc_type, exc_value, exc_traceback_obj = sys.exc_info()
+            traceback.print_tb(exc_traceback_obj)
+    # print("{} finish".format(process_id))
     output.put((process_id, results))
 
 def find_all_circle_paths(graph: dict, min_len=3, max_len=7):
@@ -33,34 +58,17 @@ def find_all_circle_path_of_length(graph: dict, nodes: list, length: int, result
     # for node in tqdm(nodes[0:len(nodes) - length + 2]):
     #     path = [node]
     #     find_all_circle_path_of_length_start_with(graph, length, results, path)
-    job_num = 16
+    job_num = 4
     result_dict = dict()
 
-
     process_list = nodes[0:len(nodes) - length + 2]
-    works_for_jobs = []
-    left_num = len(process_list)
-    for i in range(job_num):
-        _length_for_job = left_num // (job_num+1-i)
-        if i < job_num -1:
-            _works_for_job = process_list[-left_num:-left_num+_length_for_job]
-            works_for_jobs.append(_works_for_job)
-        else:
-            _works_for_job = process_list[-left_num:]
-            works_for_jobs.append(_works_for_job)
-        left_num -= _length_for_job
 
     pipe = Queue()
     outputs = [pipe for i in range(job_num)]
 
-    mp = MultiProcessor(process_fn=process_fn,job_num=16,works_for_each_job=works_for_jobs,outputs=outputs,args=[graph,length])
+    mp = MultiProcessor(process_fn=process_fn,job_num=16,works_list=process_list,args=[graph,length])
     mp.start()
-    for i in range(job_num):
-        id,_result = pipe.get()
-        result_dict[id] = _result
-
-    for i in range(job_num):
-        results.extend(result_dict[i])
+    results += mp.get_result()
 
 
 
