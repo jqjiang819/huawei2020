@@ -19,6 +19,7 @@ typedef map<int, vector<string>> Cycles;
 string vec2str(Path&);
 void judge(string, string);
 void load_data(string, Graph&);
+void load_data(string, Graph&, Graph&);
 void save_result(string, Cycles&);
 
 
@@ -63,6 +64,27 @@ void judge(string path_0, string path_1) {
     fclose(fp1);
 
     printf("results check: True\n");
+}
+
+void load_data(string path, Graph& graph, Graph& graph_r) {
+    FILE *fp = NULL;
+    Node fr, to, am;
+
+    fp = fopen(path.c_str(), "r");
+
+    if (fp == NULL) {
+        fprintf(stderr, "file: %s open error", path.c_str());
+        exit(-1);
+    }
+
+    while (fscanf(fp, "%u,%u,%u", &fr, &to, &am) == 3) {
+        graph[fr].insert(to);
+        graph_r[to].insert(fr);
+    }
+
+    fclose(fp);
+
+    printf("found %d nodes in graph\n", graph.size());
 }
 
 void load_data(string path, Graph& graph) {
